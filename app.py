@@ -15,6 +15,7 @@ board = []
 mode = "start"
 start_pos = None
 goal_pos = None
+density = tk.DoubleVar()
 
 # ---------- TOP CONTROL FRAME ----------
 control_frame = tk.Frame(root)
@@ -53,12 +54,13 @@ info_label.pack(pady=10)
 # ---------- GRID FRAME ----------
 
 grid_cells = []  # To store cell references for easy access
-def random_map_with_obstacles():
+def map_generation():
     rows = tk.simpledialog.askinteger("Input", "Enter number of rows:", parent=root, minvalue=1)
     cols = tk.simpledialog.askinteger("Input", "Enter number of columns:", parent=root, minvalue=1)
-    density = tk.DoubleVar()
+    global density
     obstacles_density = tk.Scale(root,variable=density,from_=0, to=1, resolution=0.05, orient=tk.HORIZONTAL, label="Obstacles Density")
     obstacles_density.pack(pady=10)
+    global board
     board = [[0 for _ in range(cols)] for _ in range(rows)]
     for i in range(rows):
         for j in range(cols):
@@ -82,7 +84,17 @@ def random_map_with_obstacles():
             row_list.append(cell)
         grid_cells.append(row_list)
     
-
+def dynamic_map_with_obstacles(density):
+    global board
+    for i in range(len(board)):
+        for j in range(len(board[0])):
+            if (i, j) != start_pos and (i, j) != goal_pos:
+                if random.random() < density:
+                    board[i][j] = 1  # Mark as obstacle
+                    grid_cells[i][j].config(bg="Black")
+                else:
+                    board[i][j] = 0  # Clear obstacle
+                    grid_cells[i][j].config(bg="white")
 def on_cell_click(event, r, c):
     global mode, start_pos, goal_pos
 
@@ -101,9 +113,16 @@ def on_cell_click(event, r, c):
         goal_pos = (r, c)
         grid_cells[r][c].config(bg="Green")
         board[r][c] = 3
-        info_label.config(text="Ready to run algorithm")
-        mode = "done"
-
+        info_label.config(text="Ready to run algorithm, click to add/remove obstacles",font=("Arial", 11))
+        mode = "obstacles"
+    elif mode == "obstacles":
+        # Toggle obstacle
+        if board[r][c] == 0:
+            board[r][c] = 1
+            grid_cells[r][c].config(bg="Black")
+        elif board[r][c] == 1:
+            board[r][c] = 0
+            grid_cells[r][c].config(bg="white")
 
 
 def printParent(parent, goal):
@@ -121,5 +140,5 @@ def printParent(parent, goal):
 
 
 
-random_map_with_obstacles()
+map_generation()
 root.mainloop()
