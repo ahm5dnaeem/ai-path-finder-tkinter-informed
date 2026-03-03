@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import simpledialog
+import heapq
 import time
 import random
 root = tk.Tk()
@@ -33,7 +34,7 @@ dropdown_1 = ttk.Combobox(control_frame,
                         state="readonly")
 dropdown_1.pack(side=tk.LEFT, padx=10)
 dropdown_2 = ttk.Combobox(control_frame,
-                        textvariable=algorithm_var,
+                        textvariable=heuristic_var,
                         values=["Manhattan Distance", "Euclidean Distance"],
                         state="readonly")
 dropdown_2.pack(side=tk.LEFT, padx=10)
@@ -41,6 +42,12 @@ dropdown_2.pack(side=tk.LEFT, padx=10)
 # Select Button
 def select_algorithm():
     selected = algorithm_var.get()
+    if selected == "A* Search":
+        print("A* Search selected")
+        a_star_search()
+    elif selected == "Greedy Best First Search":
+        print("Greedy Best First Search selected")
+        greedy_best_first_search()
     return
 select_btn = tk.Button(control_frame,
                        text="Select",
@@ -111,6 +118,7 @@ def on_cell_click(event, r, c):
             return
 
         goal_pos = (r, c)
+        # print("Goal position set to:", goal_pos)
         grid_cells[r][c].config(bg="Green")
         board[r][c] = 3
         info_label.config(text="Ready to run algorithm, click to add/remove obstacles",font=("Arial", 11))
@@ -125,6 +133,73 @@ def on_cell_click(event, r, c):
             grid_cells[r][c].config(bg="white")
 
 
+def heuristic(a, b, type="Manhattan Distance"):
+    if type == "Manhattan Distance":
+        print("Manhattan Distance selected")
+        print(f"Calculating Manhattan distance between {a} and {b}")
+        print(f"Horizontal distance: {abs(a[0] - b[0])}, Vertical distance: {abs(a[1] - b[1])}")
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+    elif type == "Euclidean Distance":
+        print("Euclidean Distance selected")
+        print(f"Calculating Euclidean distance between {a} and {b}")
+        print(f"Horizontal distance: {a[0] - b[0]}, Vertical distance: {a[1] - b[1]}")
+        return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+
+def get_neighbors(pos):
+    neighbors = []
+    directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+    for dr, dc in directions:
+        nr, nc = pos[0] + dr, pos[1] + dc
+        if 0 <= nr < len(board) and 0 <= nc < len(board[0]) and board[nr][nc] != 1:
+            neighbors.append((nr, nc))
+    return neighbors
+
+def greedy_best_first_search():
+    queue = []
+    heapq.heappush(queue, (heuristic(start_pos, goal_pos, heuristic_var.get()), start_pos))
+    parent = {start_pos: None} 
+    visited = set()
+    while queue:
+        _, current = heapq.heappop(queue)
+        if current in visited:
+            continue
+        visited.add(current)
+        if current == goal_pos:
+            print("Goal found!")
+            printParent(parent, goal_pos)
+            return
+        for neighbor in get_neighbors(current):
+            if neighbor not in visited:
+                parent[neighbor] = current
+                heapq.heappush(queue, (heuristic(neighbor, goal_pos, heuristic_var.get()), neighbor))
+
+def a_star_search():
+    queue = []
+    # print("Calculating heuristic for start position:", start_pos)
+    # print("Goal position:", goal_pos)
+    # print("Selected heuristic:", heuristic_var.get())
+    # heuristic(start_pos, goal_pos, heuristic_var.get())
+    # print(heuristic(start_pos, goal_pos, heuristic_var.get()))
+    heapq.heappush(queue, (0 + heuristic(start_pos, goal_pos, heuristic_var.get()), 0, start_pos))
+    parent = {start_pos: None}
+    g_cost = {start_pos: 0}
+    visited = set()
+    while queue:
+        _, current_g, current = heapq.heappop(queue)
+        if current in visited:
+            continue
+        visited.add(current)
+        if current == goal_pos:
+            print("Goal found!")
+            printParent(parent, goal_pos)
+            return
+        for neighbor in get_neighbors(current):
+            tentative_g = current_g + 1
+            if neighbor not in visited or tentative_g < g_cost.get(neighbor, float('inf')):
+                parent[neighbor] = current
+                g_cost[neighbor] = tentative_g
+                f_cost = tentative_g + heuristic(neighbor, goal_pos, heuristic_var.get())
+                heapq.heappush(queue, (f_cost, tentative_g, neighbor))
 def printParent(parent, goal):
     maingoal = goal
     while parent.get(goal) != None:
