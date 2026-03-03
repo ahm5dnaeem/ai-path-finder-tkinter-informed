@@ -4,6 +4,8 @@ from tkinter import simpledialog
 import heapq
 import time
 import random
+from datetime import datetime
+from unittest import result
 root = tk.Tk()
 root.title("Search Visualizer")
 
@@ -17,6 +19,9 @@ mode = "start"
 start_pos = None
 goal_pos = None
 density = tk.DoubleVar()
+execution_time = 0
+nodes_expanded = 0
+path_cost = 0
 
 # ---------- TOP CONTROL FRAME ----------
 control_frame = tk.Frame(root)
@@ -57,6 +62,17 @@ select_btn.pack(side=tk.LEFT)
 info_label = tk.Label(root, text="Click the start box",
                       font=("Arial", 14))
 info_label.pack(pady=10)
+
+execution_time_label = tk.Label(root, text="Execution Time: N/A",
+                                font=("Arial", 12))
+execution_time_label.pack()
+nodes_expanded_label = tk.Label(root, text="Nodes Expanded: N/A",
+                                font=("Arial", 12))
+nodes_expanded_label.pack()
+path_cost_label = tk.Label(root, text="Path Cost: N/A",
+                                font=("Arial", 12))
+path_cost_label.pack()
+
 
 # ---------- GRID FRAME ----------
 
@@ -154,16 +170,30 @@ def get_neighbors(pos):
             neighbors.append((nr, nc))
     return neighbors
 
+
+    
 def greedy_best_first_search():
     queue = []
+    # print("Calculating heuristic for start position:", start_pos)
     heapq.heappush(queue, (heuristic(start_pos, goal_pos, heuristic_var.get()), start_pos))
     parent = {start_pos: None} 
     visited = set()
+    execution_time = 0
+    execution_time_label.config(text=f"Execution Time: {execution_time:.4f} seconds")
+    current_time = datetime.now()
+    nodes_expanded = 0
     while queue:
+        execution_time = datetime.now() - current_time
+        execution_time_label.config(text=f"Execution Time: {execution_time.total_seconds():.4f} seconds")
         _, current = heapq.heappop(queue)
         if current in visited:
             continue
         visited.add(current)
+        nodes_expanded_label.config(text=f"Nodes Expanded: {len(visited)}")
+        nodes_expanded += 1
+        grid_cells[current[0]][current[1]].config(bg="Yellow")
+        root.update()
+        root.after(200)
         if current == goal_pos:
             print("Goal found!")
             printParent(parent, goal_pos)
@@ -184,11 +214,22 @@ def a_star_search():
     parent = {start_pos: None}
     g_cost = {start_pos: 0}
     visited = set()
+    execution_time = 0
+    execution_time_label.config(text=f"Execution Time: {execution_time:.4f} seconds")
+    current_time = datetime.now()
+    nodes_expanded = 0
     while queue:
+        execution_time = datetime.now() - current_time
+        execution_time_label.config(text=f"Execution Time: {execution_time.total_seconds():.4f} seconds")
         _, current_g, current = heapq.heappop(queue)
         if current in visited:
             continue
         visited.add(current)
+        grid_cells[current[0]][current[1]].config(bg="Yellow")
+        root.update()
+        root.after(200)
+        nodes_expanded_label.config(text=f"Nodes Expanded: {len(visited)}")
+        nodes_expanded += 1
         if current == goal_pos:
             print("Goal found!")
             printParent(parent, goal_pos)
@@ -202,12 +243,15 @@ def a_star_search():
                 heapq.heappush(queue, (f_cost, tentative_g, neighbor))
 def printParent(parent, goal):
     maingoal = goal
+    path_cost = 0
     while parent.get(goal) != None:
         r,c = goal
         grid_cells[r][c].config(bg="Orange")
         root.update()
         root.after(200)
         goal = parent[goal]
+        path_cost += 1
+    path_cost_label.config(text=f"Path Cost: {path_cost}")
     r,c = maingoal
     grid_cells[r][c].config(bg="Red")
     r,c = goal
