@@ -47,6 +47,10 @@ dropdown_2.pack(side=tk.LEFT, padx=10)
 # Select Button
 def select_algorithm():
     selected = algorithm_var.get()
+    dynamic_map_with_obstacles(density.get())
+    root.update()
+    info_label.config(text=f"Running {selected}...")
+    root.after(500)
     if selected == "A* Search":
         print("A* Search selected")
         a_star_search()
